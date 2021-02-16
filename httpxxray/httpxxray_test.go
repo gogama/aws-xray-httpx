@@ -6,6 +6,15 @@ package httpxxray
 
 import (
 	"testing"
+	"time"
+
+	"github.com/gogama/httpx/racing"
+
+	"github.com/aws/aws-xray-sdk-go/xray"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/gogama/httpx/retry"
 
 	"github.com/gogama/httpx"
 	"github.com/stretchr/testify/assert"
@@ -50,4 +59,123 @@ func TestOnHandlers(t *testing.T) {
 		h := &httpx.HandlerGroup{}
 		OnHandlers(h, &NopLogger{})
 	})
+}
+
+func TestIntegration(t *testing.T) {
+	for _, server := range servers {
+		t.Run(serverName(server), func(t *testing.T) {
+			t.Run("Single", func(t *testing.T) {
+				cl := &httpx.Client{
+					RetryPolicy: retry.Never,
+				}
+				m := newMockLogger(t)
+				OnClient(cl, m)
+				inst := serverInstruction{StatusCode: 500, Body: []bodyChunk{
+					{Data: []byte(`Green Eggs and Ham`)},
+				}}
+				p := inst.toPlan(parentCtx, "", httpServer)
+
+				e, err := cl.Do(p)
+
+				m.AssertExpectations(t)
+				require.NotNil(t, e)
+				require.NoError(t, err)
+
+				seg := xray.GetSegment(e.Plan.Context())
+				require.NotNil(t, seg)
+				assert.False(t, seg.InProgress)
+				assert.False(t, seg.Error)
+				assert.True(t, seg.Fault)
+
+				subSeg := xray.GetSegment(e.Request.Context())
+				require.NotNil(t, subSeg)
+				assert.Equal(t, "Attempt[0]", subSeg.Name)
+				assert.Equal(t, 500, subSeg.GetHTTP().Response.Status)
+				assert.False(t, seg.InProgress)
+				assert.False(t, seg.Error)
+				assert.True(t, seg.Fault)
+			})
+			t.Run("Serial Retries", func(t *testing.T) {
+				cl := &httpx.Client{
+					RetryPolicy: retry.NewPolicy(
+						retry.Times(1).And(retry.StatusCode(429)),
+						retry.DefaultWaiter,
+					),
+				}
+				m := newMockLogger(t)
+				OnClient(cl, m)
+				inst := serverInstruction{StatusCode: 429, Body: []bodyChunk{
+					{Data: []byte(`I so busy`)},
+				}}
+				p := inst.toPlan(parentCtx, "", httpServer)
+
+				e, err := cl.Do(p)
+
+				m.AssertExpectations(t)
+				require.NotNil(t, e)
+				require.NoError(t, err)
+
+				seg := xray.GetSegment(e.Plan.Context())
+				require.NotNil(t, seg)
+				assert.False(t, seg.InProgress)
+				assert.True(t, seg.Error)
+				assert.True(t, seg.Throttle)
+				assert.False(t, seg.Fault)
+
+				subSeg := xray.GetSegment(e.Request.Context())
+				require.NotNil(t, subSeg)
+				assert.Equal(t, "Attempt[1]", subSeg.Name)
+				assert.Equal(t, 429, subSeg.GetHTTP().Response.Status)
+				assert.True(t, seg.Error)
+				assert.True(t, seg.Throttle)
+				assert.False(t, seg.Fault)
+			})
+			t.Run("Racing", func(t *testing.T) {
+				cl := &httpx.Client{
+					RacingPolicy: racing.NewPolicy(
+						racing.NewStaticScheduler(2*time.Millisecond, 30*time.Millisecond),
+						racing.AlwaysStart,
+					),
+				}
+				m := newMockLogger(t)
+				OnClient(cl, m)
+				inst := serverInstruction{
+					HeaderPause: 50 * time.Millisecond,
+					StatusCode:  200,
+					Body: []bodyChunk{
+						{
+							Pause: 20 * time.Millisecond,
+							Data:  []byte(`I'm busy...`),
+						},
+						{
+							Pause: 10 * time.Millisecond,
+							Data:  []byte(`...but I got it done!`),
+						},
+					}}
+				p := inst.toPlan(parentCtx, "", httpServer)
+
+				e, err := cl.Do(p)
+
+				m.AssertExpectations(t)
+				require.NotNil(t, e)
+				require.NoError(t, err)
+
+				seg := xray.GetSegment(e.Plan.Context())
+				require.NotNil(t, seg)
+				assert.False(t, seg.InProgress)
+				assert.False(t, seg.Error)
+				assert.False(t, seg.Throttle)
+				assert.False(t, seg.Fault)
+
+				subSeg := xray.GetSegment(e.Request.Context())
+				require.NotNil(t, subSeg)
+				// We can't be certain which of the racing requests ended up
+				// winning the race, so no point asserting on the name.
+				assert.Equal(t, 200, subSeg.GetHTTP().Response.Status)
+				assert.False(t, seg.Error)
+				assert.False(t, seg.Throttle)
+				assert.False(t, seg.Fault)
+			})
+		})
+	}
 }

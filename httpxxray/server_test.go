@@ -24,6 +24,9 @@ import (
 )
 
 var httpServer = httptest.NewUnstartedServer(http.HandlerFunc(serverHandler))
+var httpsServer = httptest.NewUnstartedServer(http.HandlerFunc(serverHandler))
+var http2Server = httptest.NewUnstartedServer(http.HandlerFunc(serverHandler))
+var servers = []*httptest.Server{httpServer, httpsServer, http2Server}
 
 func waitForServerStart(server *httptest.Server) {
 	cl := &httpx.Client{
@@ -36,6 +39,19 @@ func waitForServerStart(server *httptest.Server) {
 	if e.StatusCode() != 200 {
 		panic(fmt.Sprintf("Test server startup failed with status %d and error %v",
 			e.StatusCode(), err))
+	}
+}
+
+func serverName(server *httptest.Server) string {
+	switch server {
+	case httpServer:
+		return "http"
+	case httpsServer:
+		return "https"
+	case http2Server:
+		return "http2"
+	default:
+		panic("unknown server")
 	}
 }
 

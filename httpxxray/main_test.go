@@ -19,14 +19,24 @@ func TestMain(m *testing.M) {
 	// no point letting it panic because it just means we need to recover
 	// from the panic in test scenarios we've deliberately set up to be
 	// missing an X-Ray parent segment.
-	xray.Configure(xray.Config{
+	err := xray.Configure(xray.Config{
 		ContextMissingStrategy: &ctxmissing.DefaultIgnoreErrorStrategy{},
 	})
+	if err != nil {
+		panic("failed to configure X-Ray")
+	}
 
-	// Start test server.
+	// Start test servers.
 	httpServer.Start()
 	defer httpServer.Close()
+	httpsServer.StartTLS()
+	defer httpsServer.Close()
+	http2Server.EnableHTTP2 = true
+	http2Server.Start()
+	defer http2Server.Close()
 	waitForServerStart(httpServer)
+	waitForServerStart(httpsServer)
+	waitForServerStart(http2Server)
 
 	// Run tests.
 	os.Exit(m.Run())
