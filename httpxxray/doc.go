@@ -3,8 +3,8 @@
 // license that can be found in the LICENSE file.
 
 /*
-Package httpxxray is an httpx plugin adding AWS X-Ray support to the
-httpx library's robust HTTP client. See https://github.com/gogama/httpx.
+Package httpxxray adds AWS X-Ray support to the httpx library's robust
+HTTP client. See https://github.com/gogama/httpx.
 
 Use the OnClient function to install X-Ray support in any httpx.Client:
 
@@ -23,8 +23,8 @@ handler.
 	)
 	e, err := cl.Do(pl)                 // Send request and read response
 
-	// If the context is sampled by X-Ray, the request trace has been
-	// emitted.
+	// If the context is sampled by X-Ray, the X-Ray trace for the HTTP
+	// request has now been emitted.
 
 Use the OnHandlers function to install X-Ray support directly onto an
 httpx.HandlerGroup.
