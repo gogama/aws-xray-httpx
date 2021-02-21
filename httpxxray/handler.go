@@ -62,6 +62,7 @@ func afterExecutionEnd(e *request.Execution) {
 	defer seg.Close(e.Err)
 	setSegmentHTTPResponse(seg, e.Response)
 	setSegmentBodyLen(seg, e.Body)
+	setSegmentExecutionMetadata(seg, e.Attempt+1, e.Wave+1)
 }
 
 func beforeAttempt(l Logger, e *request.Execution) {
@@ -71,12 +72,15 @@ func beforeAttempt(l Logger, e *request.Execution) {
 		return
 	}
 
+	setSegmentAttemptMetadata(seg, e.Attempt)
+
 	httpSubsegments, trace := newClientTrace(ctx)
 	ctx = httptrace.WithClientTrace(ctx, trace)
 	req := e.Request.WithContext(ctx)
 
 	seg.Lock()
 	defer seg.Unlock()
+	seg.Namespace = "remote"
 	reqData := seg.GetHTTP().GetRequest()
 	reqData.Method = req.Method
 	reqData.URL = stripQuery(*req.URL)
@@ -199,6 +203,15 @@ func setSegmentBodyLen(seg *xray.Segment, body []byte) {
 	if body != nil {
 		_ = seg.AddMetadataToNamespace("httpx", "body_length", len(body))
 	}
+}
+
+func setSegmentExecutionMetadata(seg *xray.Segment, attempts int, waves int) {
+	_ = seg.AddMetadataToNamespace("httpx", "attempts", attempts)
+	_ = seg.AddMetadataToNamespace("httpx", "waves", waves)
+}
+
+func setSegmentAttemptMetadata(seg *xray.Segment, attempt int) {
+	_ = seg.AddMetadataToNamespace("httpx", "attempt", attempt)
 }
 
 type executionStateKeyType int

@@ -165,6 +165,7 @@ func TestHandler_Handle(t *testing.T) {
 			attemptSeg := xray.GetSegment(e.Request.Context())
 			require.NotNil(t, attemptSeg)
 			assert.Equal(t, "Attempt[0]", attemptSeg.Name)
+			assert.Equal(t, "remote", attemptSeg.Namespace)
 			assert.True(t, attemptSeg.InProgress)
 			assert.Equal(t, 0.0, attemptSeg.EndTime)
 
@@ -199,6 +200,7 @@ func TestHandler_Handle(t *testing.T) {
 			attemptSeg := xray.GetSegment(e.Request.Context())
 			require.NotNil(t, attemptSeg)
 			assert.Equal(t, "Attempt[0]", attemptSeg.Name)
+			assert.Equal(t, "remote", attemptSeg.Namespace)
 			assert.True(t, attemptSeg.InProgress)
 			assert.Equal(t, 0.0, attemptSeg.EndTime)
 
@@ -249,6 +251,7 @@ func TestHandler_Handle(t *testing.T) {
 			attempt0Seg := xray.GetSegment(req0.Context())
 			require.NotNil(t, attempt0Seg)
 			assert.Equal(t, "Attempt[0]", attempt0Seg.Name)
+			assert.Equal(t, "remote", attempt0Seg.Namespace)
 			assert.True(t, attempt0Seg.InProgress)
 			assert.Equal(t, 0.0, attempt0Seg.EndTime)
 
@@ -263,6 +266,7 @@ func TestHandler_Handle(t *testing.T) {
 			attempt1Seg := xray.GetSegment(req1.Context())
 			require.NotNil(t, attempt1Seg)
 			assert.Equal(t, "Attempt[1]", attempt1Seg.Name)
+			assert.Equal(t, "remote", attempt1Seg.Namespace)
 			assert.True(t, attempt0Seg.InProgress)
 			assert.Equal(t, 0.0, attempt0Seg.EndTime)
 			assert.True(t, attempt1Seg.InProgress)
@@ -428,6 +432,30 @@ func TestSetSegmentBodyLen(t *testing.T) {
 		require.Contains(t, seg.Metadata["httpx"], "body_length")
 		assert.Equal(t, 3, seg.Metadata["httpx"]["body_length"])
 	})
+}
+
+func TestSetSegmentExecutionMetadata(t *testing.T) {
+	_, seg := newNonDummySegment(t)
+	defer seg.Close(nil)
+
+	setSegmentExecutionMetadata(seg, 31, 33)
+
+	require.Contains(t, seg.Metadata, "httpx")
+	require.Contains(t, seg.Metadata["httpx"], "attempts")
+	assert.Equal(t, 31, seg.Metadata["httpx"]["attempts"])
+	require.Contains(t, seg.Metadata["httpx"], "waves")
+	assert.Equal(t, 33, seg.Metadata["httpx"]["waves"])
+}
+
+func TestSetSegmentAttemptMetadata(t *testing.T) {
+	_, seg := newNonDummySegment(t)
+	defer seg.Close(nil)
+
+	setSegmentAttemptMetadata(seg, 109)
+
+	require.Contains(t, seg.Metadata, "httpx")
+	require.Contains(t, seg.Metadata["httpx"], "attempt")
+	assert.Equal(t, 109, seg.Metadata["httpx"]["attempt"])
 }
 
 func TestGetAttemptState(t *testing.T) {
