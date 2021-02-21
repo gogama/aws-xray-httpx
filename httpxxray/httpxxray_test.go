@@ -89,8 +89,6 @@ func TestIntegration(t *testing.T) {
 
 				subSeg := xray.GetSegment(e.Request.Context())
 				require.NotNil(t, subSeg)
-				assert.Same(t, seg, subSeg.ParentSegment)
-				assert.Equal(t, seg.ID, subSeg.ParentID)
 				assert.Equal(t, "Attempt[0]", subSeg.Name)
 				assert.Equal(t, 500, subSeg.GetHTTP().Response.Status)
 				assert.False(t, seg.InProgress)
@@ -126,8 +124,6 @@ func TestIntegration(t *testing.T) {
 
 				subSeg := xray.GetSegment(e.Request.Context())
 				require.NotNil(t, subSeg)
-				assert.Same(t, seg, subSeg.ParentSegment)
-				assert.Equal(t, seg.ID, subSeg.ParentID)
 				assert.Equal(t, "Attempt[1]", subSeg.Name)
 				assert.Equal(t, 429, subSeg.GetHTTP().Response.Status)
 				assert.True(t, seg.Error)
@@ -173,8 +169,6 @@ func TestIntegration(t *testing.T) {
 
 				subSeg := xray.GetSegment(e.Request.Context())
 				require.NotNil(t, subSeg)
-				assert.Same(t, seg, subSeg.ParentSegment)
-				assert.Equal(t, seg.ID, subSeg.ParentID)
 				// We can't be certain which of the racing requests ended up
 				// winning the race, so no point asserting on the name.
 				assert.Equal(t, 200, subSeg.GetHTTP().Response.Status)
