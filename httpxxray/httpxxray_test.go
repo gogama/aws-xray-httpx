@@ -66,6 +66,7 @@ func TestIntegration(t *testing.T) {
 		t.Run(serverName(server), func(t *testing.T) {
 			t.Run("Single", func(t *testing.T) {
 				cl := &httpx.Client{
+					HTTPDoer:    server.Client(),
 					RetryPolicy: retry.Never,
 				}
 				m := newMockLogger(t)
@@ -73,7 +74,7 @@ func TestIntegration(t *testing.T) {
 				inst := serverInstruction{StatusCode: 500, Body: []bodyChunk{
 					{Data: []byte(`Green Eggs and Ham`)},
 				}}
-				p := inst.toPlan(parentCtx, "", httpServer)
+				p := inst.toPlan(parentCtx, "", server)
 
 				e, err := cl.Do(p)
 
@@ -97,6 +98,7 @@ func TestIntegration(t *testing.T) {
 			})
 			t.Run("Serial Retries", func(t *testing.T) {
 				cl := &httpx.Client{
+					HTTPDoer: server.Client(),
 					RetryPolicy: retry.NewPolicy(
 						retry.Times(1).And(retry.StatusCode(429)),
 						retry.DefaultWaiter,
@@ -107,7 +109,7 @@ func TestIntegration(t *testing.T) {
 				inst := serverInstruction{StatusCode: 429, Body: []bodyChunk{
 					{Data: []byte(`I so busy`)},
 				}}
-				p := inst.toPlan(parentCtx, "", httpServer)
+				p := inst.toPlan(parentCtx, "", server)
 
 				e, err := cl.Do(p)
 
@@ -132,6 +134,7 @@ func TestIntegration(t *testing.T) {
 			})
 			t.Run("Racing", func(t *testing.T) {
 				cl := &httpx.Client{
+					HTTPDoer: server.Client(),
 					RacingPolicy: racing.NewPolicy(
 						racing.NewStaticScheduler(2*time.Millisecond, 30*time.Millisecond),
 						racing.AlwaysStart,
@@ -152,7 +155,7 @@ func TestIntegration(t *testing.T) {
 							Data:  []byte(`...but I got it done!`),
 						},
 					}}
-				p := inst.toPlan(parentCtx, "", httpServer)
+				p := inst.toPlan(parentCtx, "", server)
 
 				e, err := cl.Do(p)
 
