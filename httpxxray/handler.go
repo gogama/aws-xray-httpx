@@ -87,7 +87,7 @@ func beforeAttempt(l Logger, e *request.Execution) {
 	req.Header.Set(xray.TraceIDHeaderKey, seg.DownstreamHeader().String())
 
 	putAttemptState(e, attemptState{httpSubsegments: httpSubsegments})
-	e.Request = e.Request.WithContext(ctx)
+	e.Request = req
 }
 
 func afterAttempt(e *request.Execution) {
