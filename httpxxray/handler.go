@@ -66,7 +66,7 @@ func afterExecutionEnd(e *request.Execution) {
 }
 
 func beforeAttempt(l Logger, e *request.Execution) {
-	ctx, seg := xray.BeginSubsegment(e.Request.Context(), fmt.Sprintf("Attempt[%d]", e.Attempt))
+	ctx, seg := xray.BeginSubsegment(e.Request.Context(), fmt.Sprintf("Attempt:%d", e.Attempt))
 	if seg == nil {
 		logSubsegmentNotStarted(httpx.BeforeAttempt, l, e.Plan)
 		return

@@ -90,7 +90,7 @@ func TestIntegration(t *testing.T) {
 
 				subSeg := xray.GetSegment(e.Request.Context())
 				require.NotNil(t, subSeg)
-				assert.Equal(t, "Attempt[0]", subSeg.Name)
+				assert.Equal(t, "Attempt:0", subSeg.Name)
 				assert.Equal(t, 500, subSeg.GetHTTP().Response.Status)
 				assert.False(t, seg.InProgress)
 				assert.False(t, seg.Error)
@@ -126,7 +126,7 @@ func TestIntegration(t *testing.T) {
 
 				subSeg := xray.GetSegment(e.Request.Context())
 				require.NotNil(t, subSeg)
-				assert.Equal(t, "Attempt[1]", subSeg.Name)
+				assert.Equal(t, "Attempt:1", subSeg.Name)
 				assert.Equal(t, 429, subSeg.GetHTTP().Response.Status)
 				assert.True(t, seg.Error)
 				assert.True(t, seg.Throttle)
