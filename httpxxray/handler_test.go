@@ -165,7 +165,7 @@ func TestHandler_Handle(t *testing.T) {
 			attemptSeg := xray.GetSegment(e.Request.Context())
 			require.NotNil(t, attemptSeg)
 			assert.Equal(t, "Attempt:0", attemptSeg.Name)
-			assert.Equal(t, "remote", attemptSeg.Namespace)
+			assert.Empty(t, attemptSeg.Namespace)
 			assert.True(t, attemptSeg.InProgress)
 			assert.Equal(t, 0.0, attemptSeg.EndTime)
 
@@ -200,7 +200,7 @@ func TestHandler_Handle(t *testing.T) {
 			attemptSeg := xray.GetSegment(e.Request.Context())
 			require.NotNil(t, attemptSeg)
 			assert.Equal(t, "Attempt:0", attemptSeg.Name)
-			assert.Equal(t, "remote", attemptSeg.Namespace)
+			assert.Empty(t, attemptSeg.Namespace)
 			assert.True(t, attemptSeg.InProgress)
 			assert.Equal(t, 0.0, attemptSeg.EndTime)
 
@@ -251,7 +251,7 @@ func TestHandler_Handle(t *testing.T) {
 			attempt0Seg := xray.GetSegment(req0.Context())
 			require.NotNil(t, attempt0Seg)
 			assert.Equal(t, "Attempt:0", attempt0Seg.Name)
-			assert.Equal(t, "remote", attempt0Seg.Namespace)
+			assert.Empty(t, attempt0Seg.Namespace)
 			assert.True(t, attempt0Seg.InProgress)
 			assert.Equal(t, 0.0, attempt0Seg.EndTime)
 
@@ -266,7 +266,7 @@ func TestHandler_Handle(t *testing.T) {
 			attempt1Seg := xray.GetSegment(req1.Context())
 			require.NotNil(t, attempt1Seg)
 			assert.Equal(t, "Attempt:1", attempt1Seg.Name)
-			assert.Equal(t, "remote", attempt1Seg.Namespace)
+			assert.Empty(t, attempt1Seg.Namespace)
 			assert.True(t, attempt0Seg.InProgress)
 			assert.Equal(t, 0.0, attempt0Seg.EndTime)
 			assert.True(t, attempt1Seg.InProgress)
