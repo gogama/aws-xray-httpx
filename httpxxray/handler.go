@@ -106,9 +106,34 @@ func afterAttempt(e *request.Execution) {
 	setSegmentHTTPResponse(seg, e.Response)
 	setSegmentBodyLen(seg, e.Body)
 
-	// Emulate GotConn call within Capture closure in X-Ray SDK: xray/client.go.
+	// If the HTTP request errored out, then one or more of the connection-level
+	// X-Ray "HTTP subsegments" may still be open. If not closed, they will
+	// prevent the attempt sub-segment and ultimately the whole execution-level
+	// sub-segment from being recorded in X-Ray.
+	//
+	// Note that the AWS SDK for X-Ray (Go) tries to correct this issue:
+	//
+	//    https://github.com/aws/aws-xray-sdk-go/blob/5cd06bc6/xray/client.go#L114
+	//
+	// However, the AWS SDK code is too conservative, since it only closes the
+	// X-Ray `connect` sub-segment. It is also buggy, because in closing the
+	// `connect` sub-segment it fails to ensure the sub-sub-segments under
+	// `connect` get closed. A common use case is a timeout while establishing
+	// the initial TCP/TLS connection in a Lambda function cold start. When this
+	// happens, due to X-Ray's bug, dangling sub-sub-segments under `connect`
+	// get left open and X-Ray drops the entire parent segment.
+	//
+	// X-Ray issue: https://github.com/aws/aws-xray-sdk-go/issues/289
+	//
+	// Until the above issue is fixed, we try to improve on what X-Ray did
+	// slightly by using WroteRequest and GotFirstResponseByte in addition to
+	// GotConn to ensure ensure `request` and `response` sub-segments get closed
+	// if possible. However, until the bug affecting `connect` is fixed in
+	// X-Ray, basically all executions containing timeouts will be lost.
 	if e.Err != nil {
 		as.httpSubsegments.GotConn(nil, e.Err)
+		as.httpSubsegments.WroteRequest(httptrace.WroteRequestInfo{Err: e.Err})
+		as.httpSubsegments.GotFirstResponseByte()
 	}
 }
 
