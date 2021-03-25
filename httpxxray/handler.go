@@ -80,7 +80,6 @@ func beforeAttempt(l Logger, e *request.Execution) {
 
 	seg.Lock()
 	defer seg.Unlock()
-	seg.Namespace = "remote"
 	reqData := seg.GetHTTP().GetRequest()
 	reqData.Method = req.Method
 	reqData.URL = stripQuery(*req.URL)
