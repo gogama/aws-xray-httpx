@@ -6,6 +6,8 @@ package httpxxray
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -61,39 +63,6 @@ func TestHandler_Handle(t *testing.T) {
 
 		m.AssertExpectations(t)
 	})
-	t.Run("AfterAttempt[Missing execution state]", func(t *testing.T) {
-		// This scenario shouldn't happen, as it implies that someone else has
-		// corrupted the execution state so that the handler can find the attempt
-		// subsegment, but can't find the execution state.
-		e := newExecutionWithContext(t, parentCtx)
-		m := newMockLogger(t)
-		h := &handler{m}
-		h.Handle(httpx.BeforeExecutionStart, e)
-		e.Request = e.Plan.ToRequest(e.Plan.Context())
-		h.Handle(httpx.BeforeAttempt, e)
-		e.SetValue(executionStateKey, nil)
-
-		assert.PanicsWithError(t, "httpxxray: no execution state", func() {
-			h.Handle(httpx.AfterAttempt, e)
-		})
-	})
-	t.Run("AfterAttempt[Missing attempt state]", func(t *testing.T) {
-		// This scenario shouldn't happen, as it implies that someone else has
-		// corrupted the execution state so that the handler can find the attempt
-		// subsegment and the execution state, but can't find the attempt state
-		// within the execution state.
-		e := newExecutionWithContext(t, parentCtx)
-		m := newMockLogger(t)
-		h := &handler{m}
-		h.Handle(httpx.BeforeExecutionStart, e)
-		e.Request = e.Plan.ToRequest(e.Plan.Context())
-		h.Handle(httpx.BeforeAttempt, e)
-		e.SetValue(executionStateKey, &executionState{})
-
-		assert.PanicsWithError(t, "httpxxray: no attempt state 0", func() {
-			h.Handle(httpx.AfterAttempt, e)
-		})
-	})
 	t.Run("AfterPlanTimeout[No execution segment]", func(t *testing.T) {
 		e := newExecutionWithContext(t, context.TODO())
 		m := newMockLogger(t)
@@ -123,6 +92,7 @@ func TestHandler_Handle(t *testing.T) {
 
 		m.AssertExpectations(t)
 		assert.True(t, seg.InProgress)
+		assert.False(t, seg.ContextDone)
 		require.Contains(t, seg.Metadata, "httpx")
 		assert.Equal(t, true, seg.Metadata["httpx"]["plan_timeout"])
 	})
@@ -145,6 +115,7 @@ func TestHandler_Handle(t *testing.T) {
 		require.NotNil(t, executionSeg)
 		assert.Equal(t, "foo.com", executionSeg.Name)
 		assert.False(t, executionSeg.InProgress)
+		assert.True(t, executionSeg.ContextDone)
 	})
 	t.Run("full flow", func(t *testing.T) {
 		t.Run("serial[one attempt]", func(t *testing.T) {
@@ -177,6 +148,7 @@ func TestHandler_Handle(t *testing.T) {
 
 			h.Handle(httpx.AfterExecutionEnd, e)
 			assert.False(t, executionSeg.InProgress)
+			assert.True(t, executionSeg.ContextDone)
 			assert.Greater(t, executionSeg.EndTime, 0.0)
 
 			m.AssertExpectations(t)
@@ -224,6 +196,7 @@ func TestHandler_Handle(t *testing.T) {
 
 			h.Handle(httpx.AfterExecutionEnd, e)
 			assert.False(t, executionSeg.InProgress)
+			assert.True(t, executionSeg.ContextDone)
 			assert.Greater(t, executionSeg.EndTime, 0.0)
 
 			m.AssertExpectations(t)
@@ -308,6 +281,7 @@ func TestHandler_Handle(t *testing.T) {
 			e.Err = nil
 			h.Handle(httpx.AfterExecutionEnd, e)
 			assert.False(t, executionSeg.InProgress)
+			assert.True(t, executionSeg.ContextDone)
 			assert.Greater(t, executionSeg.EndTime, 0.0)
 			assert.False(t, executionSeg.Error)
 			assert.False(t, executionSeg.Fault)
@@ -458,23 +432,6 @@ func TestSetSegmentAttemptMetadata(t *testing.T) {
 	assert.Equal(t, 109, seg.Metadata["httpx"]["attempt"])
 }
 
-func TestGetAttemptState(t *testing.T) {
-	t.Run("No execution state", func(t *testing.T) {
-		as, err := getAttemptState(&request.Execution{})
-
-		assert.Equal(t, attemptState{}, as)
-		assert.EqualError(t, err, "httpxxray: no execution state")
-	})
-	t.Run("No attempt state", func(t *testing.T) {
-		e := &request.Execution{}
-		e.SetValue(executionStateKey, &executionState{})
-		as, err := getAttemptState(e)
-
-		assert.Equal(t, attemptState{}, as)
-		assert.EqualError(t, err, "httpxxray: no attempt state 0")
-	})
-}
-
 func TestPutAttemptState(t *testing.T) {
 	t.Run("No attempt skip", func(t *testing.T) {
 		e := &request.Execution{}
@@ -516,6 +473,17 @@ func TestPutAttemptState(t *testing.T) {
 		require.NoError(t, errAfter)
 		assert.Same(t, httpSubsegmentsAfter, asAfter.httpSubsegments)
 	})
+}
+
+func getAttemptState(e *request.Execution) (attemptState, error) {
+	es, _ := e.Value(executionStateKey).(*executionState)
+	if es == nil {
+		return attemptState{}, errors.New("httpxxray: no execution state")
+	}
+	if len(es.as) <= e.Attempt {
+		return attemptState{}, fmt.Errorf("httpxxray: no attempt state %d", e.Attempt)
+	}
+	return es.as[e.Attempt], nil
 }
 
 func newNonDummySegment(t *testing.T) (context.Context, *xray.Segment) {

@@ -7,7 +7,6 @@ package httpxxray
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptrace"
@@ -60,9 +59,22 @@ func afterExecutionEnd(e *request.Execution) {
 		return
 	}
 	defer seg.Close(e.Err)
+
 	setSegmentHTTPResponse(seg, e.Response)
 	setSegmentBodyLen(seg, e.Body)
 	setSegmentExecutionMetadata(seg, e.Attempt+1, e.Wave+1)
+
+	// AWS X-Ray for Go has bugs both in the Lambda and non-Lambda case that
+	// result the execution sub-segment not being emitted in some edge cases
+	// because various race conditions cause dangling "open" sub-subsegments
+	// under the X-Ray HTTP `connect` subsegment (which in our scheme is itself
+	// a sub-subsegment of the attempt subsegment).
+	//
+	// The most general and effective way I have found to force X-Ray to emit
+	// the execution subsegment even when these issues arise is to set its
+	// "context done" flag, which allows the subsegment to be emitted even when
+	// it has dangling open sub-subsegments.
+	seg.ContextDone = true
 }
 
 func beforeAttempt(l Logger, e *request.Execution) {
@@ -98,43 +110,8 @@ func afterAttempt(e *request.Execution) {
 
 	defer seg.Close(e.Err)
 
-	as, err := getAttemptState(e)
-	if err != nil {
-		panic(err)
-	}
-
 	setSegmentHTTPResponse(seg, e.Response)
 	setSegmentBodyLen(seg, e.Body)
-
-	// If the HTTP request errored out, then one or more of the connection-level
-	// X-Ray "HTTP subsegments" may still be open. If not closed, they will
-	// prevent the attempt sub-segment and ultimately the whole execution-level
-	// sub-segment from being recorded in X-Ray.
-	//
-	// Note that the AWS SDK for X-Ray (Go) tries to correct this issue:
-	//
-	//    https://github.com/aws/aws-xray-sdk-go/blob/5cd06bc6/xray/client.go#L114
-	//
-	// However, the AWS SDK code is too conservative, since it only closes the
-	// X-Ray `connect` sub-segment. It is also buggy, because in closing the
-	// `connect` sub-segment it fails to ensure the sub-sub-segments under
-	// `connect` get closed. A common use case is a timeout while establishing
-	// the initial TCP/TLS connection in a Lambda function cold start. When this
-	// happens, due to X-Ray's bug, dangling sub-sub-segments under `connect`
-	// get left open and X-Ray drops the entire parent segment.
-	//
-	// X-Ray issue: https://github.com/aws/aws-xray-sdk-go/issues/289
-	//
-	// Until the above issue is fixed, we try to improve on what X-Ray did
-	// slightly by using WroteRequest and GotFirstResponseByte in addition to
-	// GotConn to ensure ensure `request` and `response` sub-segments get closed
-	// if possible. However, until the bug affecting `connect` is fixed in
-	// X-Ray, basically all executions containing timeouts will be lost.
-	if e.Err != nil {
-		as.httpSubsegments.GotConn(nil, e.Err)
-		as.httpSubsegments.WroteRequest(httptrace.WroteRequestInfo{Err: e.Err})
-		as.httpSubsegments.GotFirstResponseByte()
-	}
 }
 
 func afterPlanTimeout(e *request.Execution) {
@@ -264,17 +241,6 @@ func putAttemptState(e *request.Execution, as attemptState) {
 		es.as = tmp
 	}
 	es.as[e.Attempt] = as
-}
-
-func getAttemptState(e *request.Execution) (attemptState, error) {
-	es, _ := e.Value(executionStateKey).(*executionState)
-	if es == nil {
-		return attemptState{}, errors.New("httpxxray: no execution state")
-	}
-	if len(es.as) <= e.Attempt {
-		return attemptState{}, fmt.Errorf("httpxxray: no attempt state %d", e.Attempt)
-	}
-	return es.as[e.Attempt], nil
 }
 
 const subsegmentNotStartedF = "httpxxray: [WARN] Unable to begin X-Ray subsegment in event %s (%s)"
