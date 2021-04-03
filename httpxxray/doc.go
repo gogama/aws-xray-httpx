@@ -9,7 +9,7 @@ HTTP client. See https://github.com/gogama/httpx.
 Use the OnClient function to install X-Ray support in any httpx.Client:
 
 	cl := &httpx.Client{}               // Create robust HTTP client
-	httpxxray.OnClient(cl)              // Install X-Ray plugin
+	httpxxray.OnClient(cl, nil)         // Install X-Ray plugin
 
 When creating a request plan for the client to execute, use an X-Ray
 aware context, for example the aws.Context passed to a Lambda function
