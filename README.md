@@ -86,3 +86,9 @@ This is typically caused by one of two problems:
     - You must use `request.NewPlanWithContext` with this plugin.
     - The context must contain a valid X-Ray parent segment.
 
+Acknowledgements
+================
+
+Developer happiness on this project was boosted by JetBrains' generous donation
+of an [open source license](https://www.jetbrains.com/opensource/) for their
+lovely GoLand IDE. ❤
