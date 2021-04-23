@@ -1,6 +1,6 @@
 module github.com/gogama/aws-xray-httpx/httpxxray
 
-go 1.13
+go 1.14
 
 require (
 	github.com/aws/aws-xray-sdk-go v1.3.0
