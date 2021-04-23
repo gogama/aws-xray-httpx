@@ -7,9 +7,8 @@ github.com/aws/aws-xray-sdk-go v1.3.0/go.mod h1:tmxq1c+yeEbMh39OmRFuXOrse5ajRlMm
 github.com/davecgh/go-spew v0.0.0-20160907170601-6d212800a42e/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/gogama/aws-xray-httpx v0.0.0-20210326190453-2c5f83092ce7 h1:jGWj6TMCpIcTI1KR8OMvIzrttBmrKPfGzxW7PMsn2/s=
-github.com/gogama/aws-xray-httpx v0.0.0-20210326190453-2c5f83092ce7/go.mod h1:nJUHzVLDQQcxoyncNV+PaY+wHFNer5unh+Lbka+sbhg=
-github.com/gogama/httpx v1.1.0/go.mod h1:8njIJat5uGUa4EATedxhKKuWW55Tsty68ZcnMQjtF8U=
+github.com/gogama/aws-xray-httpx/httpxxray v1.0.0 h1:GpfUz9ldfu7F5jrR43KfU4BBL8UmwgUWd/pzhzxE+as=
+github.com/gogama/aws-xray-httpx/httpxxray v1.0.0/go.mod h1:yn249T6xslqvI6rByEiYz4Tp2afno/ylpRPsb3Ahmig=
 github.com/gogama/httpx v1.1.1 h1:mdZ7poVQFlkxoPqpqqP8pe8ZUiRiaC7Z0XMK0xSRs40=
 github.com/gogama/httpx v1.1.1/go.mod h1:8njIJat5uGUa4EATedxhKKuWW55Tsty68ZcnMQjtF8U=
 github.com/gogama/testserv v1.0.0 h1:h/ERerjxr7b3X80QNSbnxJ1S2W00ZvUMdOTUds9f6bE=
