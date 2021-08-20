@@ -1,7 +1,7 @@
 httpxxray - AWS X-Ray plugin for httpx
 ======================================
 
-[![Build Status](https://travis-ci.com/gogama/aws-xray-httpx.svg)](https://travis-ci.com/gogama/aws-xray-httpx) [![Go Report Card](https://goreportcard.com/badge/github.com/gogama/aws-xray-httpx/httpxxray)](https://goreportcard.com/report/github.com/gogama/aws-xray-httpx/httpxxray) [![PkgGoDev](https://pkg.go.dev/badge/github.com/gogama/aws-xray-httpx/httpxxray)](https://pkg.go.dev/github.com/gogama/aws-xray-httpx/httpxxray)
+[![Build Status](https://travis-ci.org/gogama/aws-xray-httpx.svg)](https://travis-ci.com/gogama/aws-xray-httpx) [![Go Report Card](https://goreportcard.com/badge/github.com/gogama/aws-xray-httpx/httpxxray)](https://goreportcard.com/report/github.com/gogama/aws-xray-httpx/httpxxray) [![PkgGoDev](https://pkg.go.dev/badge/github.com/gogama/aws-xray-httpx/httpxxray)](https://pkg.go.dev/github.com/gogama/aws-xray-httpx/httpxxray)
 
 This project is an [httpx](https://github.com/gogama/httpx) plugin that
 publishes HTTP request traces to AWS X-Ray.
