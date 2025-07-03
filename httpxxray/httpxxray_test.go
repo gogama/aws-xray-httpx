@@ -10,7 +10,7 @@ import (
 
 	"github.com/gogama/httpx/racing"
 
-	"github.com/aws/aws-xray-sdk-go/xray"
+	"github.com/aws/aws-xray-sdk-go/v2/xray"
 
 	"github.com/stretchr/testify/require"
 

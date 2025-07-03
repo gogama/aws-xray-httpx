@@ -9,9 +9,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aws/aws-xray-sdk-go/strategy/ctxmissing"
+	"github.com/aws/aws-xray-sdk-go/v2/strategy/ctxmissing"
 
-	"github.com/aws/aws-xray-sdk-go/xray"
+	"github.com/aws/aws-xray-sdk-go/v2/xray"
 )
 
 func TestMain(m *testing.M) {
@@ -52,5 +52,5 @@ func TestMain(m *testing.M) {
 // References:
 //
 // - https://github.com/aws/aws-lambda-go/blob/master/lambda/function.go
-// - https://github.com/aws/aws-xray-sdk-go/blob/master/xray/lambda.go
+// - https://github.com/aws/aws-xray-sdk-go/v2/blob/master/xray/lambda.go
 var parentCtx = context.WithValue(context.Background(), "x-amzn-trace-id", "simulated Lambda X-Ray trace ID")

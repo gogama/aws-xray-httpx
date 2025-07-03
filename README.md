@@ -21,6 +21,9 @@ Install the plugin onto your `httpx.Client`:
 package main
 
 import (
+	"context"
+
+	"github.com/aws/aws-xray-sdk-go/v2/xray"
 	"github.com/gogama/aws-xray-httpx/httpxxray"
 	"github.com/gogama/httpx"
 	"github.com/gogama/httpx/request"
