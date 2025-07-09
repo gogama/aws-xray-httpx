@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/aws/aws-xray-sdk-go/xray"
-	"github.com/gogama/aws-xray-httpx/httpxxray"
+	"github.com/aws/aws-xray-sdk-go/v2/xray"
+	httpxxray "github.com/gogama/aws-xray-httpx/httpxxray/v2"
 	"github.com/gogama/httpx"
 	"github.com/gogama/httpx/request"
 	"github.com/gogama/httpx/timeout"
