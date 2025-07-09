@@ -38,6 +38,9 @@ named `lambda` which can be used as an AWS Lambda Function. The binary will be
 built to the directory `GOBIN` or, if `go env GOBIN` is blank, the directory
 `$(go env GOPATH)/bin`.
 
+**NOTE: `GOARCH` may need to be set based on the Lambda Function's** 
+**architecture**
+
 Now change directories to `GOBIN` (if `go env GOBIN` is blank this is just the
 current working directory) and create a ZIP file containing the built binary:
 

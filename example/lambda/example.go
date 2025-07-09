@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/gogama/aws-xray-httpx/httpxxray"
+	httpxxray "github.com/gogama/aws-xray-httpx/httpxxray/v2"
 	"github.com/gogama/httpx"
 	"github.com/gogama/httpx/request"
 	"github.com/gogama/httpx/timeout"
